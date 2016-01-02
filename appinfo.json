@@ -16,18 +16,18 @@
                 "type": "bitmap"
             },
             {
-                "characterRegex": "[0-9,a-z,A-Z]",
-                "file": "fonts/Watchy_Date.TTF",
-                "name": "FONT_WATCHY_DATE_20",
-                "targetPlatforms": null,
-                "type": "font"
-            },
-            {
                 "characterRegex": "[0-9,/:]",
                 "file": "fonts/Watchy_Time.ttf",
                 "name": "FONT_WATCHY_TIME_56",
                 "targetPlatforms": null,
                 "trackingAdjust": 2,
+                "type": "font"
+            },
+            {
+                "characterRegex": "[0-9,a-z,A-Z]",
+                "file": "fonts/Watchy_Date.TTF",
+                "name": "FONT_WATCHY_DATE_20",
+                "targetPlatforms": null,
                 "type": "font"
             }
         ]

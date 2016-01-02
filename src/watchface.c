@@ -40,16 +40,20 @@ static bool bConnected = false;
 static bool bCharging = false;
 static bool bPlugged = false;
 
-#define TimeLayerHeight 60
-#define DateLayerHeight 25
+#define TIME_LAYER_HEIGHT 58
+#define TIME_LAYER_BOTTOM_PADDING 4
 
-#define StatusLayerHeight 20
-#define StatusLayerBottomPadding 2
-#define BatteryStateDimension 15
-#define BatteryStateInternalPadding 2
-#define BatteryStateExternalPadding 2
+#define DATE_LAYER_HEIGHT 24
+#define DATA_LAYER_TOP_PADDING -2
 
-#define BatteryStateTotalWidth (BatteryStateDimension + BatteryStateExternalPadding)
+#define STATUS_LAYER_HEIGHT 24
+#define STATUS_LAYER_TOP_PADDING 4
+#define STATUS_LAYER_BOTTOM_PADDING 4
+
+#define BATTERY_LEVEL_HEIGHT 3
+#define BATTERY_LEVEL_HORIZONTAL_PADDING 4
+
+
 
 //===============================================================================================
 // FUNCTIONS
@@ -71,16 +75,18 @@ void watchface_main_window_load(Window *window)
 	//---------------------------------------
 	// Define bounds for elements
 	//---------------------------------------
-	GRect rectTimeBounds = GRect(0, (rectWindowBounds.size.h - (TimeLayerHeight + DateLayerHeight))  /2 , rectWindowBounds.size.w, TimeLayerHeight );
-	GRect rectDateBounds = GRect(0, (rectTimeBounds.origin.y + TimeLayerHeight) , rectWindowBounds.size.w, DateLayerHeight );
-
-	uint16_t u16YOffset = PBL_IF_ROUND_ELSE( (rectDateBounds.origin.y + DateLayerHeight + StatusLayerBottomPadding) , (rectWindowBounds.size.h - StatusLayerHeight - StatusLayerBottomPadding));
-
-	GRect rectStatusBounds = GRect(BatteryStateTotalWidth, u16YOffset , (rectWindowBounds.size.w - (BatteryStateTotalWidth * 2)), StatusLayerHeight );
+	// The battery level is a simple horixontal line accross the middle of the display
+	GRect rectBatteryBounds = GRect( BATTERY_LEVEL_HORIZONTAL_PADDING , (rectWindowBounds.size.h - BATTERY_LEVEL_HEIGHT) / 2, (rectWindowBounds.size.w - (BATTERY_LEVEL_HORIZONTAL_PADDING * 2)) , BATTERY_LEVEL_HEIGHT);
 	
+	// The time value is placed above the battery level line
+	GRect rectTimeBounds = GRect(0, (rectBatteryBounds.origin.y - (TIME_LAYER_HEIGHT + TIME_LAYER_BOTTOM_PADDING)) , rectWindowBounds.size.w, TIME_LAYER_HEIGHT );
 	
-	uint16_t u16XOffset = PBL_IF_ROUND_ELSE( (rectWindowBounds.size.w - BatteryStateDimension) /2 , (rectWindowBounds.size.w - BatteryStateDimension - BatteryStateExternalPadding) );
-	GRect rectBatteryBounds = GRect( u16XOffset , (rectWindowBounds.size.h - BatteryStateDimension - BatteryStateExternalPadding), BatteryStateDimension, BatteryStateDimension);
+	// The Data is below the battery level line
+	GRect rectDateBounds = GRect(0, (rectBatteryBounds.origin.y + BATTERY_LEVEL_HEIGHT + DATA_LAYER_TOP_PADDING) , rectWindowBounds.size.w, DATE_LAYER_HEIGHT );
+	
+	// The status label is just below the date for a pebble round, or at the bottom for other pebbles.
+	uint16_t u16YOffset = PBL_IF_ROUND_ELSE( (rectDateBounds.origin.y + DATE_LAYER_HEIGHT + STATUS_LAYER_TOP_PADDING) , (rectWindowBounds.size.h - STATUS_LAYER_HEIGHT - STATUS_LAYER_BOTTOM_PADDING));
+	GRect rectStatusBounds = GRect(0, u16YOffset , rectWindowBounds.size.w , STATUS_LAYER_HEIGHT );
 		
 	//---------------------------------------
 	// Create Bare Layers
@@ -104,7 +110,6 @@ void watchface_main_window_load(Window *window)
 	text_layer_set_background_color(s_time_layer, colWatchfaceBackgroundColour);
 	text_layer_set_text_color(s_time_layer, colWatchfaceTextColour);
 	text_layer_set_font(s_time_layer, s_custom_font_time);
-	//text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49));
 	text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
 
 	// Add it as a child layer to the Window's root layer
@@ -115,9 +120,7 @@ void watchface_main_window_load(Window *window)
 	//---------------------------------------
 	text_layer_set_background_color(s_date_layer, colWatchfaceBackgroundColour);
 	text_layer_set_text_color(s_date_layer, colWatchfaceTextColour);
-	//text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
 	text_layer_set_font(s_date_layer, s_custom_font_date);
-	//text_layer_set_text(s_date_layer,"Hello");
 	text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
 
 	// Add it as a child layer to the Window's root layer
@@ -128,9 +131,8 @@ void watchface_main_window_load(Window *window)
 	//---------------------------------------
 	text_layer_set_background_color(s_status_layer, colWatchfaceBackgroundColour);
 	text_layer_set_text_color(s_status_layer, colWatchfaceTextColour);
-	text_layer_set_font(s_status_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
-	//text_layer_set_font(s_status_layer, s_custom_font_date);
-	text_layer_set_text(s_status_layer,"Hello");
+	//text_layer_set_font(s_status_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+	text_layer_set_font(s_status_layer, s_custom_font_date);
 	text_layer_set_text_alignment(s_status_layer, GTextAlignmentCenter);
 
 	// Add it as a child layer to the Window's root layer
@@ -143,20 +145,30 @@ void watchface_main_window_load(Window *window)
 	layer_set_update_proc(s_battery_layer, watchface_battery_update_proc);
 	layer_add_child(window_layer, s_battery_layer);
 	
-	// Get a tm structure and update the time
-	time_t temp = time(NULL);
-	struct tm *tick_time = localtime(&temp);
-	watchface_update_time(tick_time);
 	
+	//---------------------------------------
+	// SUBSCRIBE TO ANY EVENTS
+	//---------------------------------------
 	battery_state_service_subscribe(handle_battery);
 	
   	connection_service_subscribe((ConnectionHandlers) 
 	{
     	.pebble_app_connection_handler = handle_bluetooth
   	});
+
+	
+	//---------------------------------------
+	// UPDATE ALL ELEMENTS
+	//---------------------------------------
+	// Get a tm structure and update the time
+	time_t temp = time(NULL);
+	struct tm *tick_time = localtime(&temp);
+	watchface_update_time(tick_time);
+	
 	
 	handle_battery(battery_state_service_peek());
 	handle_bluetooth(connection_service_peek_pebble_app_connection());
+	
 }
 
 //-----------------------------------------------------------------------------------------------
@@ -177,7 +189,6 @@ void watchface_main_window_unload(Window *window)
 	
 	layer_destroy(s_battery_layer);
 }
-
 
 
 //-----------------------------------------------------------------------------------------------
@@ -214,6 +225,8 @@ void watchface_update_time(struct tm *tick_time)
 //-----------------------------------------------------------------------------------------------
 static void update_status()
 {
+	
+
 	if (bCharging)
 	{
 		text_layer_set_text(s_status_layer, "CHARGING");
@@ -276,6 +289,13 @@ static void watchface_battery_update_proc(Layer *layer, GContext *ctx)
 	// This is a simple paritally filled bubble according to battery level..
 	BatteryChargeState sBatteryState = battery_state_service_peek();
 
+	GRect rectLayerBounds = layer_get_bounds(layer);
+	
+	// Then put a rectangle to erase the empty part
+	graphics_context_set_fill_color(ctx, GColorWhite);
+	graphics_fill_rect(ctx, rectLayerBounds,0,GCornerNone);
+	
+	/*
 	// And Calculate the constraints of each object
 	GPoint sMiddle = GPoint( (BatteryStateDimension / 2) , (BatteryStateDimension / 2) );
 	const int16_t i16CircleRadius = (BatteryStateDimension / 2);
@@ -308,7 +328,7 @@ static void watchface_battery_update_proc(Layer *layer, GContext *ctx)
 	graphics_context_set_stroke_color(ctx, GColorWhite);
 	graphics_draw_circle(ctx, sMiddle, i16CircleRadius);
 	
-	
+	*/
 }
 
 
