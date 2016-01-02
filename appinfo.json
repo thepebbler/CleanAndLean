@@ -1,0 +1,47 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "Pebbler",
+    "longName": "Lean and Clean",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/watchy_menu.png",
+                "menuIcon": true,
+                "name": "IMAGE_WATCHY_MENU",
+                "targetPlatforms": null,
+                "type": "bitmap"
+            },
+            {
+                "characterRegex": "[0-9,a-z,A-Z]",
+                "file": "fonts/Watchy_Date.TTF",
+                "name": "FONT_WATCHY_DATE_20",
+                "targetPlatforms": null,
+                "type": "font"
+            },
+            {
+                "characterRegex": "[0-9,/:]",
+                "file": "fonts/Watchy_Time.ttf",
+                "name": "FONT_WATCHY_TIME_56",
+                "targetPlatforms": null,
+                "trackingAdjust": 2,
+                "type": "font"
+            }
+        ]
+    },
+    "sdkVersion": "3",
+    "shortName": "Lean & Clean",
+    "targetPlatforms": [
+        "aplite",
+        "basalt",
+        "chalk"
+    ],
+    "uuid": "71a6fb89-8299-449b-ad68-a7fa9160889c",
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": true
+    }
+}
