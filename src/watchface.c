@@ -40,18 +40,20 @@ static bool bConnected = false;
 static bool bCharging = false;
 static bool bPlugged = false;
 
+
 #define TIME_LAYER_HEIGHT 58
-#define TIME_LAYER_BOTTOM_PADDING 4
+#define TIME_LAYER_TOP_PADDING -14
 
 #define DATE_LAYER_HEIGHT 24
-#define DATA_LAYER_TOP_PADDING -2
+#define DATE_LAYER_BOTTOM_PADDING 2
 
 #define STATUS_LAYER_HEIGHT 24
 #define STATUS_LAYER_TOP_PADDING 4
 #define STATUS_LAYER_BOTTOM_PADDING 4
 
-#define BATTERY_LEVEL_HEIGHT 3
+#define BATTERY_LEVEL_HEIGHT 4
 #define BATTERY_LEVEL_HORIZONTAL_PADDING 4
+#define BATTERY_LEVEL_CHARGE_INDICATOR_WIDTH 4
 
 
 
@@ -77,15 +79,16 @@ void watchface_main_window_load(Window *window)
 	//---------------------------------------
 	// The battery level is a simple horixontal line accross the middle of the display
 	GRect rectBatteryBounds = GRect( BATTERY_LEVEL_HORIZONTAL_PADDING , (rectWindowBounds.size.h - BATTERY_LEVEL_HEIGHT) / 2, (rectWindowBounds.size.w - (BATTERY_LEVEL_HORIZONTAL_PADDING * 2)) , BATTERY_LEVEL_HEIGHT);
+
+	// The Data is above the battery level line
+	GRect rectDateBounds = GRect(0, (rectBatteryBounds.origin.y - DATE_LAYER_HEIGHT - DATE_LAYER_BOTTOM_PADDING) , rectWindowBounds.size.w, DATE_LAYER_HEIGHT );
 	
-	// The time value is placed above the battery level line
-	GRect rectTimeBounds = GRect(0, (rectBatteryBounds.origin.y - (TIME_LAYER_HEIGHT + TIME_LAYER_BOTTOM_PADDING)) , rectWindowBounds.size.w, TIME_LAYER_HEIGHT );
+	// The time value is placed below the battery level line
+	GRect rectTimeBounds = GRect(0, (rectBatteryBounds.origin.y + (BATTERY_LEVEL_HEIGHT + TIME_LAYER_TOP_PADDING)) , rectWindowBounds.size.w, TIME_LAYER_HEIGHT );
 	
-	// The Data is below the battery level line
-	GRect rectDateBounds = GRect(0, (rectBatteryBounds.origin.y + BATTERY_LEVEL_HEIGHT + DATA_LAYER_TOP_PADDING) , rectWindowBounds.size.w, DATE_LAYER_HEIGHT );
 	
 	// The status label is just below the date for a pebble round, or at the bottom for other pebbles.
-	uint16_t u16YOffset = PBL_IF_ROUND_ELSE( (rectDateBounds.origin.y + DATE_LAYER_HEIGHT + STATUS_LAYER_TOP_PADDING) , (rectWindowBounds.size.h - STATUS_LAYER_HEIGHT - STATUS_LAYER_BOTTOM_PADDING));
+	uint16_t u16YOffset = PBL_IF_ROUND_ELSE( (rectDateBounds.origin.y - STATUS_LAYER_HEIGHT + STATUS_LAYER_BOTTOM_PADDING) , (rectWindowBounds.size.h - STATUS_LAYER_HEIGHT - STATUS_LAYER_BOTTOM_PADDING));
 	GRect rectStatusBounds = GRect(0, u16YOffset , rectWindowBounds.size.w , STATUS_LAYER_HEIGHT );
 		
 	//---------------------------------------
@@ -291,44 +294,16 @@ static void watchface_battery_update_proc(Layer *layer, GContext *ctx)
 
 	GRect rectLayerBounds = layer_get_bounds(layer);
 	
-	// Then put a rectangle to erase the empty part
-	graphics_context_set_fill_color(ctx, GColorWhite);
+	// Fill the entire layer in the foreground colour ()
+	graphics_context_set_fill_color(ctx, colWatchfaceTextColour);
 	graphics_fill_rect(ctx, rectLayerBounds,0,GCornerNone);
 	
-	/*
-	// And Calculate the constraints of each object
-	GPoint sMiddle = GPoint( (BatteryStateDimension / 2) , (BatteryStateDimension / 2) );
-	const int16_t i16CircleRadius = (BatteryStateDimension / 2);
-	int16_t i16EmptyHeight = 0;
-	if(sBatteryState.charge_percent == 100)
-	{
-		i16EmptyHeight = 0;
-	}
-	else if(sBatteryState.charge_percent == 0)
-	{
-		i16EmptyHeight = BatteryStateDimension;
-	}
-	else
-	{
-		i16EmptyHeight = BatteryStateInternalPadding + (((BatteryStateDimension - BatteryStateInternalPadding) * (100 - sBatteryState.charge_percent)) / 100);
-	}
-		
+	// Now overlay a background coloured patch representing the current battery charge.
+	// The width is static, so it will hollow out a small part of the bar
+	int16_t i16StartX = (rectLayerBounds.size.w * sBatteryState.charge_percent) / 100;
+	graphics_context_set_fill_color(ctx, colWatchfaceBackgroundColour);
+	graphics_fill_rect(ctx, GRect(i16StartX, 1 , BATTERY_LEVEL_CHARGE_INDICATOR_WIDTH, rectLayerBounds.size.h - 2) , 0,GCornerNone);
 
-
-	// First Draw the 'filled' circle
-	// Draw a white filled circle a radius of half the layer height
-	graphics_context_set_fill_color(ctx, GColorWhite);
-	graphics_fill_circle(ctx, sMiddle, i16CircleRadius);
-
-	// Then put a rectangle to erase the empty part
-	graphics_context_set_fill_color(ctx, GColorBlack);
-	graphics_fill_rect(ctx, GRect(0,0,BatteryStateDimension, i16EmptyHeight),0,GCornerNone);
-	
-	// Then draw an outline circle to complete it
-	graphics_context_set_stroke_color(ctx, GColorWhite);
-	graphics_draw_circle(ctx, sMiddle, i16CircleRadius);
-	
-	*/
 }
 
 
